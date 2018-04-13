@@ -17,12 +17,12 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  /*digitalWrite(blink_pin, HIGH);
+  digitalWrite(blink_pin, HIGH);
   delay(1000 / (blink_hz * 2));
   digitalWrite(blink_pin, LOW);
   delay(1000 / (blink_hz * 2));
 
+  /*
   for(int i = 0; i<50; ++i) {
     turn_servo.write(i);
     delay(25);
@@ -30,7 +30,7 @@ void loop() {
   for(int i = 50; i>=0; --i) {
     turn_servo.write(i);
     delay(25);
-  }*/
+  }
   turn_servo.write(angle);
-  delay(100);
+  delay(100);*/
 }

@@ -1,4 +1,4 @@
-uint32_t sampleRate = 10000 * 8; //sample rate of the sine wave in Hertz, how many times per second the TC5_Handler() function gets called per second basically
+uint32_t sampleRate = 10000 * 2; //sample rate of the sine wave in Hertz, how many times per second the TC5_Handler() function gets called per second basically
 
 #define LED_PIN 2 //just for an example
 bool state = 0; //just for an example
