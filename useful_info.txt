@@ -1,0 +1,7 @@
+Time from full left to full right: 0.27s  (New car)
+
+Servo angle: 75, full left, & 43 ,full right
+
+
+
+
