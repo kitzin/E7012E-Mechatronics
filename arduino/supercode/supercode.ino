@@ -1,10 +1,10 @@
 #include <Servo.h>
-//#include <array>
+#include <PID_v1.h>
 
 #include "config.h"
 #include "bluetooth.h"
-#include "motor.h"
-#include "steering.h"
+#include "car.h"
+#include "pid.h"
 
 #define START_SEQUENCE 0b11110000
 
@@ -12,33 +12,60 @@
 Servo motor_servo;
 Servo steering_servo;
 
-/*
-std::array<int, 7> sensor_array = {
-    ARRAY_PIN_1, ARRAY_PIN_2, ARRAY_PIN_3, ARRAY_PIN_4,
-    ARRAY_PIN_5, ARRAY_PIN_6, ARRAY_PIN_7 };
-*/
+// Array sensor pins
 int sensor_array[] = {
     ARRAY_PIN_1, ARRAY_PIN_2, ARRAY_PIN_3, ARRAY_PIN_4,
     ARRAY_PIN_5, ARRAY_PIN_6, ARRAY_PIN_7 };
 
-/*
-std::array<int, 3> speed_pins = {
-    SPEED_PIN_1, SPEED_PIN_2, SPEED_PIN_3 };
-*/
-
+// Speed sensor pins
 int speed_pins[] = {
-    SPEED_PIN_1, SPEED_PIN_2, SPEED_PIN_3 };
+    SPEED_PIN_LEFT, SPEED_PIN_RIGHT };
 
+// bluetooth ctrl struct
 car_ctrl_packet_result ccpr;
 
+// should car be running
+bool motor_running = false;
+
+pid_tuning pid_velocity_tuning = { 1, 2, 3 };
+pid_tuning pid_angle_tuning = { 1, 2, 3 };
+
+double velocity_in, velocity_out, velocity_set, angle_in, angle_out, angle_set;
+
+PID velocity_pid(&velocity_in,
+                 &velocity_out,
+                 &velocity_set,
+                 pid_velocity_tuning.Kp,
+                 pid_velocity_tuning.Ki,
+                 pid_velocity_tuning.Kd,
+                 DIRECT);
+PID angle_pid(&angle_in,
+              &angle_out,
+              &angle_set,
+              pid_angle_tuning.Kp,
+              pid_angle_tuning.Ki,
+              pid_angle_tuning.Kd,
+              DIRECT);
+
+/*
+PID angle_pid DEFAULT_PID(&angle_in,
+                          &angle_out,
+                          pid_angle_tuning);
+PID velocity_pid DEFAULT_PID(&velocity_in, 
+                             &velocity_out,
+                             pid_velocity_tuning);
+*/
+
 void setup() {
-    // setup serial port for usb and bluetooth
+
+    pinMode(2, OUTPUT);
+    digitalWrite(2, HIGH);
+
+    // setup serial port for usb
     Serial.begin(9600);
-    if (USE_BLUETOOTH) {
-        bluetooth_init(BLUETOOTH_PORT);
-    }
 
     // setup pins for sensor array
+    Serial.println("setting up pins for sensors...");
     for (const auto& pin : sensor_array) {
         pinMode(pin, INPUT);
     }
@@ -56,7 +83,7 @@ void setup() {
     // wait for motor to start
     Serial.print("waiting for motor to start...");
     while (digitalRead(MOTOR_PIN) == LOW);
-    Serial.println("motor has started...");
+    Serial.println("ok");
 
     Serial.println("set motor output to low...");
     pinMode(MOTOR_PIN, OUTPUT);
@@ -69,144 +96,33 @@ void setup() {
     motor_servo.attach(MOTOR_PIN);
 
     if (USE_BLUETOOTH){ 
-            while (ccpr.type != car_ctrl_packet_type::PWR_ON 
-                && ccpr.complete != true){
-            bluetooth_serial_read(ccpr, BLUETOOTH_PORT);
+        Serial.println("waiting for bluetooth...");
+        bluetooth_init(&BLUETOOTH_PORT);
+        while (ccpr.type != car_ctrl_packet_type::PWR_ON && 
+               ccpr.complete != true) {
+            bluetooth_serial_read(ccpr);
         }
-        /*
-        car_ctrl_packet_result r;
-        r.type = car_ctrl_packet_type::PWR_ON;
-        bluetooth_wait_for_cmd(BLUETOOTH_PORT, r);
-        */
+        Serial.println("bluetoooth remote start, recieved.");
     }
+
+    Serial.println("initializing car...");
+    car_init(speed_pins, &motor_servo, &steering_servo);
+    
+    Serial.println("starting pids...");
+    velocity_pid.SetMode(AUTOMATIC);
+    angle_pid.SetMode(AUTOMATIC);
+
+    Serial.println("finish...");
 }
 
-int value = 0;
-uint32_t command_data = 0b0;
-bool motor_running = false;
 void loop() {
-    bluetooth_serial_read(ccpr, BLUETOOTH_PORT);
-     
-    if (ccpr.complete) {
-        switch (ccpr.type) {
-            case SET_SPEED:
-                if(!motor_running)
-                    return;
-                break;
-            case GET_SPEED:
-                break;
-            case SET_STEERING:
-                if(!motor_running)
-                    return;
-                break;
-            case GET_STEERING:
-                break;
-            case PWR_OFF:
-                break;
-            case PWR_ON:
-                break;
-            case GET_ARRAY:
-                break;
-            default:
-                break;
-        }
+    if (USE_BLUETOOTH) {
+        bluetooth_serial_read(ccpr);
+        if (ccpr.complete)
+            ccpr_parse_packet(ccpr);
     }
 
-    delay(100);
-    set_speed(motor_servo, 1200);
-    Serial.println("Set motor servo to 1k");
-    return;
-    //set_steering(steering_servo, 0); // 0 full right, 50, full left
-    /*
-    for (int i=0; i<33; i++){
-        Serial.println(i);
-        set_steering(steering_servo,i);
-        delay(100);
-    }
-    for (int i=33; i>0; i--){
-        Serial.println(i);
-        set_steering(steering_servo,i);
-        delay(100);
-    }*/
-   
-    if (Serial.available()){
-        delay(10);
-        //value = Serial.read();
-        value = Serial.parseInt();
-        Serial.println(value);
-    }
-    Serial.println("");
-    Serial.print("Current: ");
-    Serial.print(value);
-    set_steering(steering_servo,value);
-    delay(100);
-    //16 == straight
-    //33 == full left
-    
-    //set_steering(steering_servo,0);
-    //delay(1000);
-    //set_steering(steering_servo,50);
-    //delay(1000);
-    //set_steering(steering_servo,0);
-    
-    
-    //set_speed(motor_servo,1500);
-    //Serial.println("1500");
-    //delay(100);
-    /*
-    motor_servo.attach(MOTOR_PIN);
-    for (int i=1600; i<1900; i = i+50){
-        Serial.println(i);
-        set_speed(motor_servo,i);
-        delay(500);
-    }
-    
-    for (int i=1900; i>1600; i = i-50){
-        Serial.println(i);
-        set_speed(motor_servo,i);
-        delay(500);
-    }
-
-    for (int i=1400; i>1100; i = i-50){
-        Serial.println(i);
-        set_speed(motor_servo,i);
-        delay(500);
-    }
-    for (int i=1100; i<1400; i = i+50){
-        Serial.println(i);
-        set_speed(motor_servo,i);
-        delay(500);
-    }
-    
-    motor_servo.detach();
-    */
-    //set_speed(motor_servo,1550);
-    /*
-    for (int i=0;i<3;i++){
-        Serial.print(".");
-        delay(1000);
-    } 
-    Serial.println("");
-    */
-    /*
-    Serial.println("Reseting Motor");
-    set_speed(motor_servo, 1500); // 1000 - 1500 forward, 1500-2000 backwards
-    delay(1000);
-    Serial.println("1600");
-    set_speed(motor_servo, 1600); // 1000 - 1500 forward, 1500-2000 backwards
-    delay(1000);
-    Serial.println("1700");
-    set_speed(motor_servo, 1700); // 1000 - 1500 forward, 1500-2000 backwards
-    delay(1000);
-    Serial.println("1800");
-    set_speed(motor_servo, 1800); // 1000 - 1500 forward, 1500-2000 backwards
-    delay(1000);
-    Serial.println("1700");
-    set_speed(motor_servo, 1700); // 1000 - 1500 forward, 1500-2000 backwards
-    delay(1000);
-    Serial.println("1600");
-    set_speed(motor_servo, 1600); // 1000 - 1500 forward, 1500-2000 backwards
-    delay(1000);
-    */
+    velocity_pid.Compute();
+    angle_pid.Compute(); 
 }
 

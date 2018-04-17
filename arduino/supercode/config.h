@@ -1,12 +1,11 @@
-#define USE_BLUETOOTH false 
+#define USE_BLUETOOTH false
 #define BLUETOOTH_PORT Serial1
 
 #define MOTOR_PIN 3
 #define STEERING_PIN 5
 
-#define SPEED_PIN_1 A0
-#define SPEED_PIN_2 A1
-#define SPEED_PIN_3 A2
+#define SPEED_PIN_LEFT A0
+#define SPEED_PIN_RIGHT A1
 
 #define MOTOR_PWR_PIN A3
 
