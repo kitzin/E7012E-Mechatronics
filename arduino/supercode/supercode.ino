@@ -74,17 +74,12 @@ void setup() {
         pinMode(pin, INPUT);
     }
 
-    pinMode(MOTOR_PIN, INPUT);
-
-    // start motor with power transistor
-    pinMode(MOTOR_PWR_PIN, OUTPUT);
-    analogWrite(MOTOR_PWR_PIN, 255);
-    
-    // wait for motor to start
+    // wait for motor to start (Controller sends out 1V during startup)
+    pinMode(MOTOR_PWR_PIN, INPUT);
     Serial.print("waiting for motor to start...");
-    while (digitalRead(MOTOR_PIN) == LOW);
-    Serial.println("ok");
-
+    while(analogRead(MOTOR_PWR_PIN) < MOTOR_PWR_THRESHOLD);
+    Serial.println("ok."); 
+    
     Serial.println("set motor output to low...");
     pinMode(MOTOR_PIN, OUTPUT);
     digitalWrite(MOTOR_PIN, LOW);

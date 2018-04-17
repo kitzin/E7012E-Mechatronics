@@ -8,6 +8,7 @@
 #define SPEED_PIN_RIGHT A1
 
 #define MOTOR_PWR_PIN A3
+#define MOTOR_PWR_THRESHOLD 150
 
 #define ARRAY_PIN_1 6
 #define ARRAY_PIN_2 7
