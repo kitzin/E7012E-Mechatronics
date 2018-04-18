@@ -58,9 +58,6 @@ PID velocity_pid DEFAULT_PID(&velocity_in,
 
 void setup() {
 
-    pinMode(2, OUTPUT);
-    digitalWrite(2, HIGH);
-
     // setup serial port for usb
     Serial.begin(9600);
 
@@ -108,7 +105,11 @@ void setup() {
     angle_pid.SetMode(AUTOMATIC);
 
     Serial.println("finish...");
+
+    motor_servo.writeMicroseconds(1650);
 }
+
+int speed = 1500;
 
 void loop() {
     if (USE_BLUETOOTH) {
@@ -116,6 +117,25 @@ void loop() {
         if (ccpr.complete)
             ccpr_parse_packet(ccpr);
     }
+
+    car_get_velocity();
+    delay(1000);
+    /*
+    for (int i = 1500; i<2000; i += 20) {
+        speed = i;
+        motor_servo.writeMicroseconds(speed);
+        delay(100);
+        car_get_velocity();
+    }
+
+    for (int i = 1980; i>1500; i -= 20) {
+        speed = i;
+        motor_servo.writeMicroseconds(speed);
+        delay(100);
+        car_get_velocity();
+    }
+    */
+
 
     velocity_pid.Compute();
     angle_pid.Compute(); 
