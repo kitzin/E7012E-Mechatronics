@@ -1,4 +1,4 @@
-#define USE_BLUETOOTH false
+#define USE_BLUETOOTH true 
 #define BLUETOOTH_PORT Serial1
 
 #define MOTOR_PIN 3

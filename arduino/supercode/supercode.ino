@@ -106,7 +106,7 @@ void setup() {
 
     Serial.println("finish...");
 
-    motor_servo.writeMicroseconds(1650);
+    //car_set_velocity(1600);
 }
 
 int speed = 1500;
@@ -118,8 +118,9 @@ void loop() {
             ccpr_parse_packet(ccpr);
     }
 
-    car_get_velocity();
-    delay(1000);
+    //car_get_velocity();
+    //delay(1000);
+    //delay(1e6);
     /*
     for (int i = 1500; i<2000; i += 20) {
         speed = i;

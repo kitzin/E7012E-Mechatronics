@@ -77,6 +77,12 @@ void car_init(int speed_pins[], Servo *m_servo, Servo *s_servo) {
 
 
 void car_set_velocity(double mps) {
+    int speed = (int)mps;
+    if (speed > 2000)
+        speed = 2000;
+    if (speed < 1000)
+        speed = 1000;
+    car_motor_servo->writeMicroseconds(speed);
 }
 
 void car_set_steering(double angle) {

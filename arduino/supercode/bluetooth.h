@@ -26,6 +26,7 @@ typedef struct {
 
 void bluetooth_init(HardwareSerial *serial);
 void bluetooth_serial_read(car_ctrl_packet_result& ccpr);
+void bluetooth_send_string(char str[ ]);
 
 void ccpr_parse_packet(car_ctrl_packet_result& ccpr);
 void ccpr_reset(car_ctrl_packet_result& ccpr);

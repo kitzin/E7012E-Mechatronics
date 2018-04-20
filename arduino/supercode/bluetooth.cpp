@@ -1,6 +1,5 @@
 #include "bluetooth.h"
 #include "car.h"
-
 HardwareSerial *bluetooth_serial;
 
 void bluetooth_init(HardwareSerial *s) {
@@ -32,6 +31,20 @@ void bluetooth_serial_read(car_ctrl_packet_result& ccpr) {
     }
 }
 
+void bluetooth_send_string(char str[ ]){
+    int size = 0;
+    while(true){
+        if (str[size] == 0)
+            break;
+        else
+            size += 1;
+    }
+    bluetooth_serial->write(size);
+    for (int i = 0; i < size; i++){
+        bluetooth_serial->write(str[i]);
+    }
+}
+
 void ccpr_reset(car_ctrl_packet_result& ccpr) {
     ccpr.complete = false;
 }
@@ -40,6 +53,7 @@ void ccpr_parse_packet(car_ctrl_packet_result &ccpr) {
     static bool motor_running = true;
     uint32_t speed = 0;
     uint32_t steering = 0;
+    char speed_buf[19];
     switch (ccpr.type) {
         case SET_SPEED:
             if(!motor_running)
@@ -49,9 +63,14 @@ void ccpr_parse_packet(car_ctrl_packet_result &ccpr) {
             speed = speed<<8 | bluetooth_serial->read();
             speed = speed<<8 | bluetooth_serial->read();
             
-            Serial.println(speed);
+            Serial.println("Speed set to: ");
+            Serial.println(String(speed));
+            car_set_velocity(speed);
+            ("Speed set to: " + String(speed)).toCharArray(speed_buf,19);
+            bluetooth_send_string(speed_buf);
             break;
         case GET_SPEED:
+            bluetooth_serial->write(car_get_velocity());
             break;
         case SET_STEERING:
             if(!motor_running)
@@ -68,6 +87,7 @@ void ccpr_parse_packet(car_ctrl_packet_result &ccpr) {
         case PWR_OFF:
             motor_running = false;
             Serial.println("motor off");
+            car_set_velocity(1500);
             break;
         case PWR_ON:
             motor_running = true;
