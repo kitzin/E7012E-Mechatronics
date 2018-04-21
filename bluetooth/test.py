@@ -2,8 +2,25 @@ from time import sleep
 import struct
 from bluetooth import discover_devices, BluetoothSocket, RFCOMM
 import _thread
+import pathlib
 
+from os import path
+from datetime import datetime
 
+def handleSpeedValues(thread_name, data, log_handle):
+    recived = struct.Struct('iff').unpack(data)
+    logWrite("{1}{0}{2}{0}{3}".format(delimter, data[0], data[1], data[2]))
+
+def handleString(thread_name, data, log_handle):
+    recived = struct.Struct('s').unpack(data)
+    logWrite("{1}{0}{2}".format(delimter, "LOG:", data[0]))
+
+identifiers = {
+    "|" : (12, handleSpeedValues),
+    "<" : (1, handleString)
+}
+
+delimiter = ","
 
 def find_device_mac(name):
     devices = discover_devices(lookup_names=True)
@@ -42,28 +59,56 @@ def sendByte(socket,byte):
     print(socket.send(struct.Struct('B').pack(byte)))
     print("Sent data")
 
-def checkForData(threadName,socket):
-    print("%s %s" % (threadName, "reporting."))
+def checkForData(thread_name, socket, log_handle):
+    print("%s %s" % (thread_name, "reporting."))
     data_chunk = b''
     waiting_for_data = False
+    wait_for_bytes = 0
+    current_identifier = ""
     next_chunk_size = 0
     while True:
         data = socket.recv(1024)
-        #data = socket.recv(1)
-        if data and not waiting_for_data:
-            data_chunk = b''
-            waiting_for_data = True
-            print("%s: %s" % (threadName, data))
-            next_chunk_size = int.from_bytes(data, byteorder='little')
-            print(next_chunk_size)
+        
+        if data and waiting_for_bytes <= 0:
+            recived = struct.Struct('c').unpack(data)
+            current_identifier = recived[0]
+            wait_for_bytes = identifiers[current_indentifier][0]
+        
         elif data:
-            data_chunk += data
-            print(data_chunk)
-            if len(data_chunk) >= next_chunk_size:
-                print("%s: %s" % (threadName, data_chunk.decode("utf-8", "ignore")))
-                waiting_for_data = False
+            if data >= wait_for_bytes:
+                data_chunk += data
+                indentifiers[current_identifier][1](thread_name, data_chunk, log_handle)
+                data_chunk = b''
+                wait_for_bytes = 0
+                current_identifier = ""
+            else:
+                data_chunk += data
+
+        ##data = socket.recv(1)
+        #if data and not waiting_for_data:
+        #    data_chunk = b''
+        #    waiting_for_data = True
+        #    #print("%s: %s" % (thread_name, data))
+        #    next_chunk_size = int.from_bytes(data, byteorder='little')
+        #    #print(next_chunk_size)
+        #elif data:
+        #    data_chunk += data
+        #    #print(data_chunk)
+        #    if len(data_chunk) >= next_chunk_size:
+        #        print("%s: %s" % (thread_name, data_chunk.decode("utf-8", "ignore")))
+        #        logWrite("%s: %s" % (thread_name, data_chunk.decode("utf-8", "ignore")))
+        #        waiting_for_data = False
+
+
+def logWrite(line,file_handle):
+    file_handle.write(line+"\n")
 
 if __name__ == '__main__':
+    logFile = datetime.now().strftime("bluetooth-log-%H-%M.log.csv")
+    logsPath = "./logs/"+datetime.now().strftime("%Y-%m-%d")
+    pathlib.Path(logsPath).mkdir(parents=True,exist_ok=True)
+
+    f = open(path.join(logsPath,logFile),'w')
     print("Starting...")
     #devices = discover_devices(lookup_names=True)
     #print(devices)
@@ -88,6 +133,7 @@ if __name__ == '__main__':
     while True:
         inp = input(">")
         if inp == "quit":
+            f.close()
             break
         converted = 0;
         try:
