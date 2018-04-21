@@ -1,12 +1,12 @@
 #include <Servo.h>
 #include <PID_v1.h>
+#include <Thread.h>
+#include <ThreadController.h>
 
 #include "config.h"
 #include "bluetooth.h"
 #include "car.h"
 #include "pid.h"
-
-#define START_SEQUENCE 0b11110000
 
 // Servos for motor and steering
 Servo motor_servo;
@@ -47,14 +47,18 @@ PID angle_pid(&angle_in,
               pid_angle_tuning.Kd,
               DIRECT);
 
-/*
-PID angle_pid DEFAULT_PID(&angle_in,
-                          &angle_out,
-                          pid_angle_tuning);
-PID velocity_pid DEFAULT_PID(&velocity_in, 
-                             &velocity_out,
-                             pid_velocity_tuning);
-*/
+Thread test_thread;
+ThreadController tctrl;
+
+void testf() {
+    float velocity = car_get_velocity();
+    float angle = car_get_steering();
+    long time = millis();
+    bluetooth_send("|", 1);
+    bluetooth_send((char*)&velocity, sizeof(velocity));
+    bluetooth_send((char*)&angle, sizeof(angle));
+    bluetooth_send((char*)&time, sizeof(time));
+}
 
 void setup() {
 
@@ -106,10 +110,19 @@ void setup() {
 
     Serial.println("finish...");
 
-    //car_set_velocity(1600);
-}
 
-int speed = 1500;
+    test_thread.enabled = true;
+    test_thread.setInterval(1000);
+    test_thread.onRun(testf);
+
+    tctrl = ThreadController();
+    tctrl.add(&test_thread);
+
+    Serial.println(sizeof(int));
+    Serial.println(sizeof(long));
+    Serial.println(sizeof(float));
+    Serial.println(sizeof(double));
+}
 
 void loop() {
     if (USE_BLUETOOTH) {
@@ -118,27 +131,9 @@ void loop() {
             ccpr_parse_packet(ccpr);
     }
 
-    //car_get_velocity();
-    //delay(1000);
-    //delay(1e6);
-    /*
-    for (int i = 1500; i<2000; i += 20) {
-        speed = i;
-        motor_servo.writeMicroseconds(speed);
-        delay(100);
-        car_get_velocity();
-    }
-
-    for (int i = 1980; i>1500; i -= 20) {
-        speed = i;
-        motor_servo.writeMicroseconds(speed);
-        delay(100);
-        car_get_velocity();
-    }
-    */
-
-
     velocity_pid.Compute();
     angle_pid.Compute(); 
+    
+    tctrl.run();
 }
 

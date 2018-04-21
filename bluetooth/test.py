@@ -96,7 +96,7 @@ if __name__ == '__main__':
             continue
         if convert == 3:
             sendByte(socket,convert)
-            askForInput("Speed: ",1500,1700)
+            askForInput("Speed: ",1500,1990)
         else:
             sendByte(socket,convert)
 

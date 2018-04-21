@@ -31,7 +31,13 @@ void bluetooth_serial_read(car_ctrl_packet_result& ccpr) {
     }
 }
 
-void bluetooth_send_string(char str[ ]){
+void bluetooth_send(const char *const data, int len) {
+    for (int i = 0; i<len; ++i) {
+        bluetooth_serial->write(data[i]);
+    }
+}
+
+void bluetooth_send_string(char str[]){
     int size = 0;
     while(true){
         if (str[size] == 0)
@@ -39,6 +45,7 @@ void bluetooth_send_string(char str[ ]){
         else
             size += 1;
     }
+    bluetooth_serial->write("<");
     bluetooth_serial->write(size);
     for (int i = 0; i < size; i++){
         bluetooth_serial->write(str[i]);
