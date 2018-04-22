@@ -48,16 +48,30 @@ PID angle_pid(&angle_in,
               DIRECT);
 
 Thread test_thread;
+Thread bluetooth_send_thread;
 ThreadController tctrl;
 
 void testf() {
+    static float last_velocities[2] = {3.f, 1.f};
+    static int count_velocities = 0;
     float velocity = car_get_velocity();
     float angle = car_get_steering();
     long time = millis();
-    bluetooth_send("|", 1);
-    bluetooth_send((char*)&velocity, sizeof(velocity));
-    bluetooth_send((char*)&angle, sizeof(angle));
-    bluetooth_send((char*)&time, sizeof(time));
+    
+    if ( last_velocities[0] == last_velocities[1] && last_velocities[0] == velocity){
+         
+    }
+    else {
+        bluetooth_send("|", 1);
+        bluetooth_send((char*)&time, sizeof(time));
+        bluetooth_send((char*)&velocity, sizeof(velocity));
+        bluetooth_send((char*)&angle, sizeof(angle));
+    }
+
+    last_velocities[count_velocities++] = velocity;
+    if(count_velocities > 1){
+        count_velocities = 0;
+    }
 }
 
 void setup() {
@@ -112,16 +126,16 @@ void setup() {
 
 
     test_thread.enabled = true;
-    test_thread.setInterval(1000);
+    test_thread.setInterval(10);
     test_thread.onRun(testf);
+
+    bluetooth_send_thread.enabled = true;
+    bluetooth_send_thread.setInterval(50);
+    bluetooth_send_thread.onRun(bluetooth_thread_send);
 
     tctrl = ThreadController();
     tctrl.add(&test_thread);
-
-    Serial.println(sizeof(int));
-    Serial.println(sizeof(long));
-    Serial.println(sizeof(float));
-    Serial.println(sizeof(double));
+    tctrl.add(&bluetooth_send_thread);
 }
 
 void loop() {

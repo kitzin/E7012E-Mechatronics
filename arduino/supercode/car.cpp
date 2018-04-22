@@ -102,9 +102,9 @@ void car_set_steering(double angle) {
 }
 
 double car_get_velocity() {
-    Serial.print(left_angle_velocity * CAR_WHEEL_RADIUS * 1000);
-    Serial.print(" : ");
-    Serial.println(right_angle_velocity *  CAR_WHEEL_RADIUS * 1000);
+    //Serial.print(left_angle_velocity * CAR_WHEEL_RADIUS * 1000);
+    //Serial.print(" : ");
+    //Serial.println(right_angle_velocity *  CAR_WHEEL_RADIUS * 1000);
     return ((left_angle_velocity + right_angle_velocity) / 2) * CAR_WHEEL_RADIUS * 1000;
 }
 

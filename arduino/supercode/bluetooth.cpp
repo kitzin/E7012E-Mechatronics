@@ -2,9 +2,42 @@
 #include "car.h"
 HardwareSerial *bluetooth_serial;
 
+char bluetooth_buffer[MAX_BUFFER_SIZE];
+char* buffer_start;
+char* buffer_end;
+char* buffer_current_read_pos;
+char* buffer_current_max_data_pos;
+int bytes_in_buffer = 0;
+
 void bluetooth_init(HardwareSerial *s) {
     bluetooth_serial = s;
     bluetooth_serial->begin(9600);
+    memset(bluetooth_buffer,0,MAX_BUFFER_SIZE);
+
+
+    //Init buffer counters
+    buffer_start = (char *)&bluetooth_buffer;
+    buffer_end = (char *)(&bluetooth_buffer + 1) - 1;
+    buffer_current_read_pos = buffer_start;
+    buffer_current_max_data_pos = buffer_start;
+}
+
+void bluetooth_thread_send(){
+    if(bytes_in_buffer > 0){
+        bluetooth_serial->write(*buffer_current_read_pos);
+        bytes_in_buffer--;
+        if(buffer_current_read_pos == buffer_end){
+            buffer_current_read_pos = buffer_start;
+        }
+        else{
+            buffer_current_read_pos++;
+        }
+    }
+    else{
+        return;
+    }
+    //for (int i=0; i<64;i++) {
+    //}
 }
 
 void bluetooth_serial_read(car_ctrl_packet_result& ccpr) {
@@ -33,8 +66,30 @@ void bluetooth_serial_read(car_ctrl_packet_result& ccpr) {
 
 void bluetooth_send(const char *const data, int len) {
     for (int i = 0; i<len; ++i) {
+       if(bytes_in_buffer >= MAX_BUFFER_SIZE){
+            Serial.println("BUFFER_OVERFLOW");
+            break;
+       }
+       else{
+           if(buffer_current_max_data_pos == buffer_end){
+               buffer_current_max_data_pos = buffer_start;
+           }
+           else if(buffer_current_max_data_pos == buffer_start && bytes_in_buffer == 0){
+                //This is the starting point
+           }
+           else{
+               buffer_current_max_data_pos++;
+           }
+           *buffer_current_max_data_pos = data[i];
+           bytes_in_buffer++;
+       }
+    }
+
+    /*
+    for (int i = 0; i<len; ++i) {
         bluetooth_serial->write(data[i]);
     }
+    */
 }
 
 void bluetooth_send_string(char str[]){
@@ -73,8 +128,6 @@ void ccpr_parse_packet(car_ctrl_packet_result &ccpr) {
             Serial.println("Speed set to: ");
             Serial.println(String(speed));
             car_set_velocity(speed);
-            ("Speed set to: " + String(speed)).toCharArray(speed_buf,19);
-            bluetooth_send_string(speed_buf);
             break;
         case GET_SPEED:
             bluetooth_serial->write(car_get_velocity());
