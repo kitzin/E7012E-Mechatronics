@@ -4,6 +4,7 @@
 #include <ThreadController.h>
 
 #include "config.h"
+#include "log.h"
 #include "bluetooth.h"
 #include "car.h"
 #include "pid.h"
@@ -27,28 +28,12 @@ car_ctrl_packet_result ccpr;
 // should car be running
 bool motor_running = false;
 
-pid_tuning pid_velocity_tuning = { 1, 2, 3 };
-pid_tuning pid_angle_tuning = { 1, 2, 3 };
-
-double velocity_in, velocity_out, velocity_set, angle_in, angle_out, angle_set;
-
-PID velocity_pid(&velocity_in,
-                 &velocity_out,
-                 &velocity_set,
-                 pid_velocity_tuning.Kp,
-                 pid_velocity_tuning.Ki,
-                 pid_velocity_tuning.Kd,
-                 DIRECT);
-PID angle_pid(&angle_in,
-              &angle_out,
-              &angle_set,
-              pid_angle_tuning.Kp,
-              pid_angle_tuning.Ki,
-              pid_angle_tuning.Kd,
-              DIRECT);
 
 Thread test_thread;
 Thread bluetooth_send_thread;
+Thread car_update_thread;
+Thread pid_update_thread;
+Thread printing_thread;
 ThreadController tctrl;
 
 void testf() {
@@ -58,10 +43,7 @@ void testf() {
     float angle = car_get_steering();
     long time = millis();
     
-    if ( last_velocities[0] == last_velocities[1] && last_velocities[0] == velocity){
-         
-    }
-    else {
+    if ( velocity != 0.f){
         bluetooth_send("|", 1);
         bluetooth_send((char*)&time, sizeof(time));
         bluetooth_send((char*)&velocity, sizeof(velocity));
@@ -74,13 +56,16 @@ void testf() {
     }
 }
 
-void setup() {
+void printing() {
+    DEBUG_LOGLN(car_get_velocity());    
+}
 
+void setup() {
     // setup serial port for usb
-    Serial.begin(9600);
+    SERIAL_PORT.begin(9600);
 
     // setup pins for sensor array
-    Serial.println("setting up pins for sensors...");
+    DEBUG_LOGLN("setting up pins for sensors...");
     for (const auto& pin : sensor_array) {
         pinMode(pin, INPUT);
     }
@@ -89,53 +74,72 @@ void setup() {
         pinMode(pin, INPUT);
     }
 
+    // attach steering servo
+    DEBUG_LOGLN("attaching steering servo...");
+    steering_servo.attach(STEERING_PIN);
+    steering_servo.write(60);
+
     // wait for motor to start (Controller sends out 1V during startup)
     pinMode(MOTOR_PWR_PIN, INPUT);
-    Serial.print("waiting for motor to start...");
+    DEBUG_LOG("waiting for motor to start...");
     while(analogRead(MOTOR_PWR_PIN) < MOTOR_PWR_THRESHOLD);
-    Serial.println("ok."); 
+    DEBUG_LOGLN("ok."); 
     
-    Serial.println("set motor output to low...");
+    DEBUG_LOGLN("set motor output to low...");
     pinMode(MOTOR_PIN, OUTPUT);
     digitalWrite(MOTOR_PIN, LOW);
 
 
     // attach steering and motor to servo
-    Serial.println("attaching servos...");
-    steering_servo.attach(STEERING_PIN);
+    DEBUG_LOGLN("attaching motor servo...");
     motor_servo.attach(MOTOR_PIN);
 
     if (USE_BLUETOOTH){ 
-        Serial.println("waiting for bluetooth...");
+        DEBUG_LOGLN("waiting for bluetooth...");
         bluetooth_init(&BLUETOOTH_PORT);
         while (ccpr.type != car_ctrl_packet_type::PWR_ON && 
                ccpr.complete != true) {
             bluetooth_serial_read(ccpr);
         }
-        Serial.println("bluetoooth remote start, recieved.");
+        DEBUG_LOGLN("bluetoooth remote start, recieved.");
     }
 
-    Serial.println("initializing car...");
+    DEBUG_LOGLN("initializing car...");
     car_init(speed_pins, &motor_servo, &steering_servo);
     
-    Serial.println("starting pids...");
-    velocity_pid.SetMode(AUTOMATIC);
-    angle_pid.SetMode(AUTOMATIC);
+    DEBUG_LOGLN("initializing pids...");
+    pid_init();
 
-    Serial.println("finish...");
-
-
-    test_thread.enabled = true;
+    // setup all the threads
+    DEBUG_LOGLN("initializing threads...");
+    test_thread.enabled = false;
     test_thread.setInterval(10);
     test_thread.onRun(testf);
+
+    printing_thread.enabled = true;
+    printing_thread.setInterval(1000);
+    printing_thread.onRun(printing);
 
     bluetooth_send_thread.enabled = true;
     bluetooth_send_thread.setInterval(50);
     bluetooth_send_thread.onRun(bluetooth_thread_send);
 
+    car_update_thread.enabled = true;
+    car_update_thread.setInterval(50);
+    car_update_thread.onRun(car_update_velocity);
+
+    pid_update_thread.enabled = true;
+    pid_update_thread.setInterval(10);
+    pid_update_thread.onRun(pid_update);
+
     tctrl = ThreadController();
     tctrl.add(&test_thread);
     tctrl.add(&bluetooth_send_thread);
+    tctrl.add(&car_update_thread);
+    tctrl.add(&printing_thread);
+    tctrl.add(&pid_update_thread);
+
+    DEBUG_LOGLN("finish...");
 }
 
 void loop() {
@@ -145,8 +149,6 @@ void loop() {
             ccpr_parse_packet(ccpr);
     }
 
-    velocity_pid.Compute();
-    angle_pid.Compute(); 
     
     tctrl.run();
 }

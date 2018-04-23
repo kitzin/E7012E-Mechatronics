@@ -14,10 +14,10 @@ void bluetooth_init(HardwareSerial *s) {
     bluetooth_serial->begin(9600);
     memset(bluetooth_buffer,0,MAX_BUFFER_SIZE);
 
-
     //Init buffer counters
     buffer_start = (char *)&bluetooth_buffer;
-    buffer_end = (char *)(&bluetooth_buffer + 1) - 1;
+    buffer_end = (char *)(&bluetooth_buffer + MAX_BUFFER_SIZE - 1);
+
     buffer_current_read_pos = buffer_start;
     buffer_current_max_data_pos = buffer_start;
 }
