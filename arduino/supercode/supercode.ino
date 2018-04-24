@@ -125,7 +125,7 @@ void setup() {
     bluetooth_send_thread.onRun(bluetooth_thread_send);
 
     car_update_thread.enabled = true;
-    car_update_thread.setInterval(50);
+    car_update_thread.setInterval(5);
     car_update_thread.onRun(car_update_velocity);
 
     pid_update_thread.enabled = true;
