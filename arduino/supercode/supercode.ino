@@ -112,7 +112,7 @@ void setup() {
 
     // setup all the threads
     DEBUG_LOGLN("initializing threads...");
-    test_thread.enabled = false;
+    test_thread.enabled = true;
     test_thread.setInterval(10);
     test_thread.onRun(testf);
 
