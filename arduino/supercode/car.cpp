@@ -10,17 +10,17 @@
 Servo *car_motor_servo;
 Servo *car_steering_servo;
 
-double angle_velocity;
-double current_steering;
+float angle_velocity;
+float current_steering;
 
 int pulse_right_count = 0;
 int pulse_left_count = 0;
 
 int angle_velocity_count = 0;
-double previous_angle_velocities[ANGLE_VELOCITY_PREVIOUS_MAX];
+float previous_angle_velocities[ANGLE_VELOCITY_PREVIOUS_MAX];
 
-void calculate_angle_velocity(double *angle_velocity, double previous_velocities[]) {
-    double current = 0;
+void calculate_angle_velocity(float *angle_velocity, float previous_velocities[]) {
+    float current = 0;
     for (int i = 0; i<ANGLE_VELOCITY_PREVIOUS_MAX; ++i) {
         current += previous_velocities[i];
     }
@@ -44,16 +44,16 @@ void car_init(int speed_pins[], Servo *m_servo, Servo *s_servo) {
 }
 
 
-void car_set_velocity(double mps) {
+void car_set_velocity(float mps) {
     int speed = (int)mps;
     if (speed > 2000)
         speed = 2000;
     if (speed < 1000)
         speed = 1000;
     car_motor_servo->writeMicroseconds(speed);
-}
+} 
 
-void car_set_steering(double angle) {
+void car_set_steering(float angle) {
     if (angle > CAR_MAX_STEERING_ANGLE)
         angle = CAR_MAX_STEERING_ANGLE;
     if (angle < -CAR_MAX_STEERING_ANGLE)
@@ -75,22 +75,36 @@ void car_update_velocity(){
         return;
     }
 
-    double current_angle_velocity =  ((pulse_left_count + pulse_right_count) / 2 * (M_PI / 2)) / (current_time - previous_time);
+    //Could crash, divid by 0
+    float current_angle_velocity =  ((pulse_left_count + pulse_right_count) / 2 * (M_PI / 2)) / (current_time - previous_time);
 
     previous_angle_velocities[angle_velocity_count++] = current_angle_velocity;
     calculate_angle_velocity(&angle_velocity, previous_angle_velocities);
 
+
     previous_time = current_time;
     pulse_left_count = pulse_right_count = 0;
 
-    if (angle_velocity_count > ANGLE_VELOCITY_PREVIOUS_MAX-1)
+    if (angle_velocity_count > ANGLE_VELOCITY_PREVIOUS_MAX - 1)
         angle_velocity_count = 0;
 }
 
-double car_get_velocity() {
+float car_get_velocity() {
     return angle_velocity * CAR_WHEEL_RADIUS * 1000;
 }
 
-double car_get_steering() {
+float car_get_steering() {
     return current_steering;
+}
+
+float car_get_sensor_angle() {
+    return 0;
+}
+
+float car_get_sensor_distance() {
+    return 0;
+}
+
+car_measurements car_get_measurements() {
+    return { 0.3, 0.15 };
 }

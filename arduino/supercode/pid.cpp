@@ -1,37 +1,52 @@
 #include <PID_v1.h>
+#include <math.h>
 
 #include "pid.h"
+#include "car.h"
 
-pid_tuning pid_velocity_tuning = { 1, 2, 3 };
-pid_tuning pid_angle_tuning = { 1, 2, 3 };
+// velocity to velocity
+pid_tuning pid_velocity_tuning = { 0.03984, 79.88, 0 };
+pid_io velocity_io = { 0, 0, 1 };
+// angle to angle
+pid_tuning pid_angle_tuning = { 0, 0.3, 0.003 };
+pid_io angle_io = { 0, 0, 0 };
+// angle to velocitiy
+pid_tuning pid_anglevelocity_tuning = { 0.03984, 79.88, 0 };
+pid_io angle_vel_io = { 0, 0, 0 };
 
-double velocity_in, velocity_out, velocity_set, angle_in, angle_out, angle_set;
-
-PID velocity_pid(&velocity_in,
-                 &velocity_out,
-                 &velocity_set,
-                 pid_velocity_tuning.Kp,
-                 pid_velocity_tuning.Ki,
-                 pid_velocity_tuning.Kd,
-                 DIRECT);
-PID angle_pid(&angle_in,
-              &angle_out,
-              &angle_set,
-              pid_angle_tuning.Kp,
-              pid_angle_tuning.Ki,
-              pid_angle_tuning.Kd,
-              DIRECT);
+PID velocity_pid DEFAULT_PID(velocity_io, pid_velocity_tuning);
+PID angle_pid DEFAULT_PID(angle_io, pid_angle_tuning);
+PID angle_velocity_pid DEFAULT_PID(angle_vel_io, pid_anglevelocity_tuning);
 
 void pid_init() {
     velocity_pid.SetMode(AUTOMATIC);
     angle_pid.SetMode(AUTOMATIC);
+    angle_velocity_pid.SetMode(AUTOMATIC);
 }
 
 void pid_set_tuning(const pid_tuning& tuning, PID& controller) {
    controller.SetTunings(tuning.Kp, tuning.Ki, tuning.Kd); 
 }
 
+#define CAR_LENGTH 0.3
+#define SENSOR_DISTANCE 0.15
+
 void pid_update() {
+    velocity_io.in = car_get_velocity(); 
+    angle_io.in = car_get_sensor_angle();
+    angle_vel_io.in = abs(car_get_sensor_angle());
+
     velocity_pid.Compute();
     angle_pid.Compute(); 
+    angle_velocity_pid.Compute();
+
+    car_set_velocity(velocity_io.out - angle_vel_io.out + 1500);
+
+    car_measurements car = car_get_measurements();
+
+    float steering_angle = atan2(
+            2 * car.length * car.distance_to_sensor,
+            pow(car.length + car.distance_to_sensor, 2) + pow(car_get_sensor_distance(), 2));
+
+    car_set_steering(angle_io.out + steering_angle);
 }

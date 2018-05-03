@@ -43,7 +43,7 @@ void testf() {
     float angle = car_get_steering();
     long time = millis();
     
-    if ( velocity != 0.f){
+    if ( velocity != 0.f && USE_BLUETOOTH){
         bluetooth_send("|", 1);
         bluetooth_send((char*)&time, sizeof(time));
         bluetooth_send((char*)&velocity, sizeof(velocity));
@@ -57,7 +57,7 @@ void testf() {
 }
 
 void printing() {
-    DEBUG_LOGLN(car_get_velocity());    
+    DEBUG_LOGLN(car_get_velocity()); 
 }
 
 void setup() {
@@ -120,12 +120,14 @@ void setup() {
     printing_thread.setInterval(1000);
     printing_thread.onRun(printing);
 
-    bluetooth_send_thread.enabled = true;
-    bluetooth_send_thread.setInterval(50);
-    bluetooth_send_thread.onRun(bluetooth_thread_send);
+    if (USE_BLUETOOTH) {
+        bluetooth_send_thread.enabled = true;
+        bluetooth_send_thread.setInterval(50);
+        bluetooth_send_thread.onRun(bluetooth_thread_send);
+    }
 
     car_update_thread.enabled = true;
-    car_update_thread.setInterval(5);
+    car_update_thread.setInterval(20);
     car_update_thread.onRun(car_update_velocity);
 
     pid_update_thread.enabled = true;
@@ -134,12 +136,15 @@ void setup() {
 
     tctrl = ThreadController();
     tctrl.add(&test_thread);
-    tctrl.add(&bluetooth_send_thread);
+    if (USE_BLUETOOTH) {
+        tctrl.add(&bluetooth_send_thread);
+    }
     tctrl.add(&car_update_thread);
     tctrl.add(&printing_thread);
     tctrl.add(&pid_update_thread);
 
     DEBUG_LOGLN("finish...");
+    car_set_velocity(1650);
 }
 
 void loop() {
@@ -149,7 +154,6 @@ void loop() {
             ccpr_parse_packet(ccpr);
     }
 
-    
     tctrl.run();
 }
 
