@@ -105,7 +105,7 @@ void setup() {
     }
 
     DEBUG_LOGLN("initializing car...");
-    car_init(speed_pins, &motor_servo, &steering_servo);
+    car_init(speed_pins, sensor_array, &motor_servo, &steering_servo);
     
     DEBUG_LOGLN("initializing pids...");
     pid_init();

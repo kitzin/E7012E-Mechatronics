@@ -28,25 +28,25 @@ void pid_set_tuning(const pid_tuning& tuning, PID& controller) {
    controller.SetTunings(tuning.Kp, tuning.Ki, tuning.Kd); 
 }
 
-#define CAR_LENGTH 0.3
-#define SENSOR_DISTANCE 0.15
-
 void pid_update() {
     velocity_io.in = car_get_velocity(); 
     angle_io.in = car_get_sensor_angle();
     angle_vel_io.in = abs(car_get_sensor_angle());
 
+    // compute all pid thigns
     velocity_pid.Compute();
     angle_pid.Compute(); 
     angle_velocity_pid.Compute();
 
+    // set velocity from pid controller
     car_set_velocity(velocity_io.out - angle_vel_io.out + 1500);
 
-    car_measurements car = car_get_measurements();
+    car_measurements car = *(car_get_measurements());
 
     float steering_angle = atan2(
             2 * car.length * car.distance_to_sensor,
             pow(car.length + car.distance_to_sensor, 2) + pow(car_get_sensor_distance(), 2));
 
+    // set steering angle from pid controller
     car_set_steering(angle_io.out + steering_angle);
 }
