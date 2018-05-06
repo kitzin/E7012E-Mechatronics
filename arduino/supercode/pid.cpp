@@ -3,6 +3,7 @@
 
 #include "pid.h"
 #include "car.h"
+#include "log.h"
 
 // velocity to velocity
 pid_tuning pid_velocity_tuning = { 0.03984, 79.88, 0 };
@@ -29,6 +30,7 @@ void pid_set_tuning(const pid_tuning& tuning, PID& controller) {
 }
 
 void pid_update() {
+    return;
     velocity_io.in = car_get_velocity(); 
     angle_io.in = car_get_sensor_angle();
     angle_vel_io.in = abs(car_get_sensor_angle());

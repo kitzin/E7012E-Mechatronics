@@ -57,7 +57,8 @@ void testf() {
 }
 
 void printing() {
-    DEBUG_LOGLN(car_get_velocity()); 
+    //DEBUG_LOGLN(car_get_steering()); 
+    DEBUG_LOGLNS(car_get_sensor_state(), BIN);
 }
 
 void setup() {
@@ -82,8 +83,8 @@ void setup() {
     // wait for motor to start (Controller sends out 1V during startup)
     pinMode(MOTOR_PWR_PIN, INPUT);
     DEBUG_LOG("waiting for motor to start...");
-    while(analogRead(MOTOR_PWR_PIN) < MOTOR_PWR_THRESHOLD);
-    DEBUG_LOGLN("ok."); 
+    while(analogRead(MOTOR_PWR_PIN) < MOTOR_PWR_THRESHOLD) delay(100);
+    DEBUG_LOGLN("ok.");  
     
     DEBUG_LOGLN("set motor output to low...");
     pinMode(MOTOR_PIN, OUTPUT);
@@ -127,7 +128,7 @@ void setup() {
     }
 
     car_update_thread.enabled = true;
-    car_update_thread.setInterval(20);
+    car_update_thread.setInterval(50);
     car_update_thread.onRun(car_update_velocity);
 
     pid_update_thread.enabled = true;
@@ -139,12 +140,12 @@ void setup() {
     if (USE_BLUETOOTH) {
         tctrl.add(&bluetooth_send_thread);
     }
+
     tctrl.add(&car_update_thread);
     tctrl.add(&printing_thread);
     tctrl.add(&pid_update_thread);
 
     DEBUG_LOGLN("finish...");
-    car_set_velocity(1650);
 }
 
 void loop() {

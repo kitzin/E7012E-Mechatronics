@@ -20,5 +20,6 @@ float car_get_steering();
 float car_get_sensor_angle();
 float car_get_sensor_distance();
 car_measurements* car_get_measurements();
+uint8_t car_get_sensor_state();
 
 #endif

@@ -1,4 +1,5 @@
 #include "car.h"
+#include "log.h"
 
 #include <math.h>
 
@@ -42,13 +43,13 @@ void car_speedsensor_right_pulse() {
 }
 
 void sensor_array_change() {
+    DEBUG_LOGLN("array change"); 
     for (int i = 0; i<7; ++i) {
-        int state = 0;
-        state = digitalRead(sensor_pins[i]);  
-        if (state == LOW)
+        if (digitalRead(sensor_pins[i]) == LOW) {
             bitSet(sensor_state, i);
-        else
+        } else {
             bitClear(sensor_state, i);
+        }
     } 
 }
 
@@ -59,12 +60,12 @@ void car_init(int speed_pins[], int sense_pins[], Servo *m_servo, Servo *s_servo
     sensor_pins = sense_pins;
     for (int i = 0; i<7; ++i) {
         attachInterrupt(digitalPinToInterrupt(sensor_pins[i]), sensor_array_change, CHANGE);
-
     }
 
     car_motor_servo = m_servo;
     car_steering_servo = s_servo;
-    
+
+    sensor_array_change();
 }
 
 
@@ -88,7 +89,7 @@ void car_set_steering(float angle) {
     int servo_value = servo_diff + (angle / (CAR_MAX_STEERING_ANGLE * 2)) * servo_diff;
     
     car_steering_servo->write(servo_value);
-    current_steering = angle;
+    current_steering = angle - CAR_MAX_STEERING_ANGLE;
 }
 
 void car_update_velocity(){
@@ -183,4 +184,8 @@ float car_get_sensor_distance() {
 car_measurements* car_get_measurements() {
     static car_measurements car_mes = { 0.3, 0.15, { -15, -9, -4, 0, 4, 9, 15 } };
     return &car_mes;
+}
+
+uint8_t car_get_sensor_state() {
+    return sensor_state;
 }
