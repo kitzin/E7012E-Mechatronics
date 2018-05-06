@@ -45,7 +45,7 @@ void car_speedsensor_right_pulse() {
 void sensor_array_change() {
     DEBUG_LOGLN("array change"); 
     for (int i = 0; i<7; ++i) {
-        if (digitalRead(sensor_pins[i]) == LOW) {
+        if (digitalRead(sensor_pins[i]) == HIGH) {
             bitSet(sensor_state, i);
         } else {
             bitClear(sensor_state, i);
@@ -67,7 +67,6 @@ void car_init(int speed_pins[], int sense_pins[], Servo *m_servo, Servo *s_servo
 
     sensor_array_change();
 }
-
 
 void car_set_velocity(float mps) {
     int speed = (int)mps;

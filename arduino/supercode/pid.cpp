@@ -35,12 +35,12 @@ void pid_update() {
     angle_io.in = car_get_sensor_angle();
     angle_vel_io.in = abs(car_get_sensor_angle());
 
-    // compute all pid thigns
+    // compute all controller things
     velocity_pid.Compute();
     angle_pid.Compute(); 
     angle_velocity_pid.Compute();
 
-    // set velocity from pid controller
+    // set velocity from controller
     car_set_velocity(velocity_io.out - angle_vel_io.out + 1500);
 
     car_measurements car = *(car_get_measurements());
@@ -49,6 +49,6 @@ void pid_update() {
             2 * car.length * car.distance_to_sensor,
             pow(car.length + car.distance_to_sensor, 2) + pow(car_get_sensor_distance(), 2));
 
-    // set steering angle from pid controller
+    // set steering angle from controller
     car_set_steering(angle_io.out + steering_angle);
 }

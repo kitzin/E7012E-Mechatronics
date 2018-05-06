@@ -16,6 +16,6 @@
 #define ARRAY_PIN_2 7
 #define ARRAY_PIN_3 8
 #define ARRAY_PIN_4 9
-#define ARRAY_PIN_5 10
+#define ARRAY_PIN_5 13
 #define ARRAY_PIN_6 11
 #define ARRAY_PIN_7 12
