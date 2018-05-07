@@ -7,7 +7,7 @@
 
 // velocity to velocity
 pid_tuning pid_velocity_tuning = { 0.03984, 79.88, 0 };
-pid_io velocity_io = { 0, 0, 1 };
+pid_io velocity_io = { 0, 0, 3 };
 // angle to angle
 pid_tuning pid_angle_tuning = { 0, 0.3, 0.003 };
 pid_io angle_io = { 0, 0, 0 };
@@ -30,10 +30,9 @@ void pid_set_tuning(const pid_tuning& tuning, PID& controller) {
 }
 
 void pid_update() {
-    return;
     velocity_io.in = car_get_velocity(); 
     angle_io.in = car_get_sensor_angle();
-    angle_vel_io.in = abs(car_get_sensor_angle());
+    angle_vel_io.in = abs(car_get_sensor_angle() * 2);
 
     // compute all controller things
     velocity_pid.Compute();
@@ -44,9 +43,9 @@ void pid_update() {
     car_set_velocity(velocity_io.out - angle_vel_io.out + 1500);
 
     car_measurements car = *(car_get_measurements());
-
+    
     float steering_angle = atan2(
-            2 * car.length * car.distance_to_sensor,
+            2 * car.length * car_get_sensor_distance(),
             pow(car.length + car.distance_to_sensor, 2) + pow(car_get_sensor_distance(), 2));
 
     // set steering angle from controller

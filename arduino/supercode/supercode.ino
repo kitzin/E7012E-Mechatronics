@@ -58,7 +58,10 @@ void testf() {
 
 void printing() {
     //DEBUG_LOGLN(car_get_steering()); 
-    DEBUG_LOGLNS(car_get_sensor_state(), BIN);
+    //DEBUG_LOGLNS(car_get_sensor_state(), BIN);
+    DEBUG_LOGLN(car_get_velocity());
+    DEBUG_LOGLN(car_get_sensor_angle() * (180 / M_PI));
+    //DEBUG_LOGLN(car_get_sensor_distance());
 }
 
 void setup() {

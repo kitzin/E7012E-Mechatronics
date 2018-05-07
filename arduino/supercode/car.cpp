@@ -23,7 +23,6 @@ int angle_velocity_count = 0;
 
 float previous_angle_velocities[ANGLE_VELOCITY_PREVIOUS_MAX];
 
-uint8_t sensor_state = 0;
 int *sensor_pins;
 
 void calculate_angle_velocity(float *angle_velocity, float previous_velocities[]) {
@@ -42,30 +41,14 @@ void car_speedsensor_right_pulse() {
     ++pulse_right_count;
 }
 
-void sensor_array_change() {
-    DEBUG_LOGLN("array change"); 
-    for (int i = 0; i<7; ++i) {
-        if (digitalRead(sensor_pins[i]) == HIGH) {
-            bitSet(sensor_state, i);
-        } else {
-            bitClear(sensor_state, i);
-        }
-    } 
-}
-
 void car_init(int speed_pins[], int sense_pins[], Servo *m_servo, Servo *s_servo) {
     attachInterrupt(digitalPinToInterrupt(speed_pins[0]), car_speedsensor_left_pulse, FALLING);
     attachInterrupt(digitalPinToInterrupt(speed_pins[1]), car_speedsensor_right_pulse, FALLING);
 
     sensor_pins = sense_pins;
-    for (int i = 0; i<7; ++i) {
-        attachInterrupt(digitalPinToInterrupt(sensor_pins[i]), sensor_array_change, CHANGE);
-    }
 
     car_motor_servo = m_servo;
     car_steering_servo = s_servo;
-
-    sensor_array_change();
 }
 
 void car_set_velocity(float mps) {
@@ -129,62 +112,79 @@ float car_get_sensor_angle() {
 
 // distance from middle to line
 float car_get_sensor_distance() {
-    static float previus_distance = 0;
+    static float previous_distance = 0;
     
     car_measurements car_vals = *(car_get_measurements());
 
-    int looker = 3;
+    float found_sensors[7] = { 0 };
+    int found_index = 0;
+    int mid = 3;
 
-    bool looking_right = false;
-    bool found = false;
-    int found_on = 0;
+    bool ignore_left = false;
+    bool ignore_right = false;
 
-    if (bitRead(sensor_state,looker) == 1){
-        found = true;
-        found_on = 0;
+    bool sensor_found = false;
+
+    uint8_t sensor_state = car_get_sensor_state();
+
+    if (bitRead(sensor_state, mid) == 1) {
+        found_sensors[found_index++] = car_vals.sensor_distances[mid];
+        sensor_found = true;
     }
-    for (int i=1; i<=3,!found; ++i) {
-        if (bitRead(sensor_state, looker + i)) {
-            found = true;
-            found_on = i;
-            looking_right = true;
-        } else if (bitRead(sensor_state, looker - i)) {
-            found = true;
-            found_on = i;
-            looking_right = false;
+    for (int i=1; i<=3; ++i) {
+
+        if (bitRead(sensor_state, mid + i)) {
+            if (!ignore_right) {
+                found_sensors[found_index++] = car_vals.sensor_distances[mid + i];
+                sensor_found = true;
+            }
+        } else {
+            if (sensor_found)
+                ignore_right = true;
+        }
+        
+        if (!ignore_left && bitRead(sensor_state, mid - i)) {
+            if (!ignore_left) {
+                found_sensors[found_index++] = car_vals.sensor_distances[mid - i];
+                sensor_found = true;
+            }
+        } else {
+            if (sensor_found)
+                ignore_left = true;
+        }
+
+        if (ignore_left && ignore_right) {
+            break;
         }
     }
-    if (found) {
-        if (found_on == 0) {
-            if (bitRead(sensor_state, looker + 1)) {
-                previus_distance = (car_vals.sensor_distances[looker] + car_vals.sensor_distances[looker + 1])/2;
-            } else if (bitRead(sensor_state, looker - 1)) {
-                previus_distance = (car_vals.sensor_distances[looker] + car_vals.sensor_distances[looker - 1])/2;
-            } else {
-                previus_distance = car_vals.sensor_distances[looker];
-            }
-        } else if (found_on < 3) {
-            if (looking_right) {
-                if (bitRead(sensor_state, looker + found_on + 1))
-                    previus_distance = (car_vals.sensor_distances[looker + found_on] + car_vals.sensor_distances[looker + found_on + 1])/2;
-                else
-                    previus_distance = car_vals.sensor_distances[looker + found_on];
-            } else {
-                if (bitRead(sensor_state, looker + found_on - 1))
-                    previus_distance = (car_vals.sensor_distances[looker - found_on] + car_vals.sensor_distances[looker - found_on - 1])/2;
-                else
-                    previus_distance = car_vals.sensor_distances[looker - found_on];
-            }
-        }
+
+    if (found_index == 0)
+        return previous_distance;
+
+    float distance = 0;
+    for (int i = 0; i<=found_index; ++i) {
+        distance += found_sensors[i];
     }
-    return previus_distance;
+
+    previous_distance = distance /= found_index;
+
+    return distance;
 }
 
 car_measurements* car_get_measurements() {
-    static car_measurements car_mes = { 0.3, 0.15, { -15, -9, -4, 0, 4, 9, 15 } };
+    static car_measurements car_mes = { 0.263, 0.185, { -0.15, -0.09, -0.04, 0, 0.04, 0.09, 0.15 } };
     return &car_mes;
 }
 
 uint8_t car_get_sensor_state() {
-    return sensor_state;
+    uint8_t sensor_state = 0;
+    for (int i = 0; i<7; ++i) {
+        if (digitalRead(sensor_pins[i]) == HIGH) {
+            bitSet(sensor_state, i);
+        } else {
+            bitClear(sensor_state, i);
+        }
+    } 
+    return 0b1000000;
+    //return sensor_state;
 }
