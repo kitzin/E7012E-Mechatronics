@@ -5,6 +5,14 @@
 #include <Servo.h>
 #include <math.h>
 
+#define CAR_WHEEL_RADIUS (64.06/2)
+#define CAR_MAX_STEERING_ANGLE (25*(M_PI/180))
+#define CAR_STEERING_SERVO_MAX 80
+#define CAR_STEERING_SERVO_MIN 40
+
+#define ANGLE_VELOCITY_PREVIOUS_MAX 5
+#define SENSOR_ARRAY_PREVIOUS_MAX 5
+
 typedef struct {
     float length;
     float distance_to_sensor;

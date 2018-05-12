@@ -3,12 +3,6 @@
 
 #include <math.h>
 
-#define CAR_WHEEL_RADIUS (64.06/2)
-#define CAR_MAX_STEERING_ANGLE (25*(M_PI/180))
-#define CAR_STEERING_SERVO_MAX 80
-#define CAR_STEERING_SERVO_MIN 40
-
-#define ANGLE_VELOCITY_PREVIOUS_MAX 5
 
 Servo *car_motor_servo;
 Servo *car_steering_servo;
@@ -21,7 +15,10 @@ int pulse_left_count = 0;
 
 int angle_velocity_count = 0;
 
-float previous_angle_velocities[ANGLE_VELOCITY_PREVIOUS_MAX];
+float previous_angle_velocities[ANGLE_VELOCITY_PREVIOUS_MAX] = { 0 };
+float previous_sensor_array[SENSOR_ARRAY_PREVIOUS_MAX] = { 0 };
+
+int previous_sensor_array_count = 0;
 
 int *sensor_pins;
 
@@ -55,8 +52,8 @@ void car_set_velocity(float mps) {
     int speed = (int)mps;
     if (speed > 2000)
         speed = 2000;
-    if (speed < 1000)
-        speed = 1000;
+    if (speed < 1500)
+        speed = 1500;
     car_motor_servo->writeMicroseconds(speed);
 } 
 
@@ -123,33 +120,35 @@ float car_get_sensor_distance() {
     bool ignore_left = false;
     bool ignore_right = false;
 
-    bool sensor_found = false;
+    bool sensor_found_left = false;
+    bool sensor_found_right = false;
 
     uint8_t sensor_state = car_get_sensor_state();
 
     if (bitRead(sensor_state, mid) == 1) {
         found_sensors[found_index++] = car_vals.sensor_distances[mid];
-        sensor_found = true;
+        sensor_found_left = true;
+        sensor_found_right = true;
     }
     for (int i=1; i<=3; ++i) {
 
         if (bitRead(sensor_state, mid + i)) {
             if (!ignore_right) {
                 found_sensors[found_index++] = car_vals.sensor_distances[mid + i];
-                sensor_found = true;
+                sensor_found_right = true;
             }
         } else {
-            if (sensor_found)
+            if (sensor_found_right)
                 ignore_right = true;
         }
         
-        if (!ignore_left && bitRead(sensor_state, mid - i)) {
+        if (bitRead(sensor_state, mid - i)) {
             if (!ignore_left) {
                 found_sensors[found_index++] = car_vals.sensor_distances[mid - i];
-                sensor_found = true;
+                sensor_found_left = true;
             }
         } else {
-            if (sensor_found)
+            if (sensor_found_left)
                 ignore_left = true;
         }
 
@@ -162,22 +161,34 @@ float car_get_sensor_distance() {
         return previous_distance;
 
     float distance = 0;
-    for (int i = 0; i<=found_index; ++i) {
+    for (int i = 0; i<found_index; ++i) {
         distance += found_sensors[i];
     }
 
-    previous_distance = distance /= found_index;
+    distance /= found_index;
+    previous_sensor_array[previous_sensor_array_count++] = distance;
 
-    return distance;
+    float avg_distance = 0;
+    for (int i = 0; i<SENSOR_ARRAY_PREVIOUS_MAX; ++i) {
+        avg_distance += previous_sensor_array[i];
+    }
+
+    avg_distance /= SENSOR_ARRAY_PREVIOUS_MAX;
+    previous_distance = avg_distance;
+
+    if (previous_sensor_array_count == SENSOR_ARRAY_PREVIOUS_MAX)
+        previous_sensor_array_count = 0;
+
+    return avg_distance;
 }
 
 car_measurements* car_get_measurements() {
-    static car_measurements car_mes = { 0.263, 0.185, { -0.15, -0.09, -0.04, 0, 0.04, 0.09, 0.15 } };
+    static car_measurements car_mes = { 0.263, 0.185, { -0.12, -0.08, -0.04, 0, 0.04, 0.08, 0.12 } };
     return &car_mes;
 }
 
 uint8_t car_get_sensor_state() {
-    uint8_t sensor_state = 0;
+        uint8_t sensor_state = 128;
     for (int i = 0; i<7; ++i) {
         if (digitalRead(sensor_pins[i]) == HIGH) {
             bitSet(sensor_state, i);
@@ -185,6 +196,5 @@ uint8_t car_get_sensor_state() {
             bitClear(sensor_state, i);
         }
     } 
-    return 0b1000000;
-    //return sensor_state;
+    return sensor_state;
 }
