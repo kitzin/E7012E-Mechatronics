@@ -58,17 +58,38 @@ void car_set_velocity(float mps) {
 } 
 
 void car_set_steering(float angle) {
-    if (angle > CAR_MAX_STEERING_ANGLE)
-        angle = CAR_MAX_STEERING_ANGLE;
-    if (angle < -CAR_MAX_STEERING_ANGLE)
-        angle = -CAR_MAX_STEERING_ANGLE;
+    if (angle > CAR_MAX_STEERING_ANGLE_LEFT) {
+        angle = (CAR_MAX_STEERING_ANGLE_LEFT / (M_PI/180));
+    }
+    else if (angle < -CAR_MAX_STEERING_ANGLE_RIGHT) {
+        angle = (-CAR_MAX_STEERING_ANGLE_RIGHT / (M_PI/180));
+    }
+    else {
+        angle = (angle / (M_PI/180));
+    }
+    //DEBUG_LOGLN(angle);
+    //Erik made me do this!!!!
+    //this calculation is derived from an second order polynomial line adaptation from desired angle to servo angle
+    float servo_value = (angle * angle) * (CAR_STEERING_SERVO_MIDDLE / 8778.0) + angle * (8545.0/8778.0) + CAR_STEERING_SERVO_MIDDLE; 
+    
+    /* 
+    if (servo_value > CAR_STEERING_SERVO_MIDDLE)
+        car_steering_servo->write(servo_value * 1.15);
+    else if (servo_value < CAR_STEERING_SERVO_MIDDLE)
+        car_steering_servo->write(servo_value / 1.15);
+    else
+        car_steering_servo->write(servo_value);
+    */
 
+    car_steering_servo->write(servo_value);
+    /*
     angle += CAR_MAX_STEERING_ANGLE;
     int servo_diff = CAR_STEERING_SERVO_MAX - CAR_STEERING_SERVO_MIN;
     int servo_value = servo_diff + (angle / (CAR_MAX_STEERING_ANGLE * 2)) * servo_diff;
     
     car_steering_servo->write(servo_value);
     current_steering = angle - CAR_MAX_STEERING_ANGLE;
+    */
 }
 
 void car_update_velocity(){
@@ -183,7 +204,7 @@ float car_get_sensor_distance() {
 }
 
 car_measurements* car_get_measurements() {
-    static car_measurements car_mes = { 0.263, 0.185, { -0.12, -0.08, -0.04, 0, 0.04, 0.08, 0.12 } };
+    static car_measurements car_mes = { 0.263, 0.185, { -0.22, -0.14, -0.04, 0, 0.04, 0.14, 0.22 } };
     return &car_mes;
 }
 
