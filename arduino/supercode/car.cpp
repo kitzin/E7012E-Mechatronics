@@ -149,7 +149,7 @@ void car_update_servo_angle() {
     static uint8_t previous_state = 0;
     uint8_t state = car_get_sensor_state();
 
-    if(get_servo_value_from_state(state | previous_state) != -1) {
+    if(state != 0 && get_servo_value_from_state(state | previous_state) != -1) {
         previous_servo_value = get_servo_value_from_state(state);
         previous_state = state;
     }
