@@ -1,7 +1,5 @@
 #include <Servo.h>
 #include <PID_v1.h>
-#include <Thread.h>
-#include <ThreadController.h>
 
 #include "config.h"
 #include "log.h"
@@ -21,16 +19,6 @@ int sensor_array[] = {
 int speed_pins[] = {
     SPEED_PIN_LEFT, SPEED_PIN_RIGHT };
 
-// should car be running
-bool motor_running = false;
-
-
-Thread bluetooth_send_thread;
-Thread car_update_thread;
-Thread pid_update_thread;
-Thread printing_thread;
-ThreadController tctrl;
-
 void printing() {
     //DEBUG_LOGLN(car_get_steering()); 
     //DEBUG_LOGLNS(car_get_sensor_state(), BIN);
@@ -39,14 +27,14 @@ void printing() {
     //DEBUG_LOGLN(car_get_sensor_distance());
 }
 
-long time_since_pid = 0;
-long time_since_car_update = 0;
+long time_last_pid = 0;
+long time_last_car_update_vel = 0;
+long time_last_car_update_angle = 0;
 long time_since_print = 0;
 
-long time_loop = 0;
-
-long timeout_pid = 50;
-long timout_car_update = 50;
+long timeout_pid = 50*1000;
+long timout_car_update_vel = 50*1000;
+long timout_car_update_angle = 50*1000;
 long timeout_print = 1000;
 
 void setup() {
@@ -90,27 +78,6 @@ void setup() {
     DEBUG_LOGLN("initializing pids...");
     pid_init();
 
-    // setup all the threads
-    DEBUG_LOGLN("initializing threads...");
-
-    printing_thread.enabled = true;
-    printing_thread.setInterval(1000);
-    printing_thread.onRun(printing);
-
-    car_update_thread.enabled = true;
-    car_update_thread.setInterval(50);
-    car_update_thread.onRun(car_update_velocity);
-
-    pid_update_thread.enabled = true;
-    pid_update_thread.setInterval(50);
-    pid_update_thread.onRun(pid_update);
-
-    tctrl = ThreadController();
-
-    tctrl.add(&car_update_thread);
-    tctrl.add(&printing_thread);
-    tctrl.add(&pid_update_thread);
-
     DEBUG_LOGLN("finish...");
     digitalWrite(LED_BUILTIN, HIGH);
 
@@ -120,6 +87,23 @@ void setup() {
 }
 
 void loop() {
-	long time_past = Millis();
-	time_since_pid = 
+	if (millis() - time_last_pid >= timeout_pid){
+		time_last_pid = millis();
+		pid_update();
+	}
+
+	if (millis() - time_last_car_update_angle >= timeout_car_update_angle){
+		time_last_car_update_angle = millis();
+		car_update_servo_angle();
+	}
+
+	if (millis() - time_last_car_update_vel >= timeout_car_update_vel){
+		time_last_car_update_vel = millis();
+		car_update_velocity();
+	}
+
+	if (millis() - time_since_print >= timeout_print){
+		time_since_print = millis();
+		printing();
+	}
 }

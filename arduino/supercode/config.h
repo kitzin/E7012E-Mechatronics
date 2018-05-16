@@ -1,7 +1,5 @@
 #define DEBUG true
 #define SERIAL_PORT Serial
-#define USE_BLUETOOTH true 
-#define BLUETOOTH_PORT Serial1
 
 #define MOTOR_PIN 3
 #define STEERING_PIN 5
