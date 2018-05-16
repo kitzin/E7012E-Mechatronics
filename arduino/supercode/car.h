@@ -31,7 +31,7 @@ float car_get_velocity();
 car_measurements* car_get_measurements();
 uint8_t car_get_sensor_state();
 void car_update_servo_angle();
-void car_get_current_servo_value();
+int car_get_current_servo_value();
 
 #endif
 

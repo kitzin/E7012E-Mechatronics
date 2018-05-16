@@ -141,7 +141,7 @@ int get_servo_value_from_state(uint8_t state) {
 }
 
 int previous_servo_value = 0;
-void car_get_current_servo_value() {
+int car_get_current_servo_value() {
     return previous_servo_value;
 }
 
