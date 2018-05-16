@@ -1,12 +1,11 @@
 #include <Servo.h>
-#define STEERING_PIN 13
+#define STEERING_PIN 5 
 #define IS_LOOPING false 
 Servo steering_servo;
 
 void setup() {
     Serial.begin(9600);
     steering_servo.attach(STEERING_PIN);
-    steering_servo.write(43);
     pinMode(5,OUTPUT);
     
 }
@@ -38,7 +37,7 @@ void loop() {
             }
             Serial.println(value);
             steering_servo.write(value);
-            digitalWrite(5,HIGH);
+            //digitalWrite(5,HIGH);
         }
     }
 }

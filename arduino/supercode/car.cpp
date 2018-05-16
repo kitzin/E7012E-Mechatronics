@@ -17,6 +17,7 @@ int angle_velocity_count = 0;
 
 float previous_angle_velocities[ANGLE_VELOCITY_PREVIOUS_MAX] = { 0 };
 float previous_sensor_array[SENSOR_ARRAY_PREVIOUS_MAX] = { 0 };
+uint8_t previous_sensor_array_values[SENSOR_ARRAY_PREVIOUS_MAX] = { 0 };
 
 int previous_sensor_array_count = 0;
 
@@ -49,47 +50,38 @@ void car_init(int speed_pins[], int sense_pins[], Servo *m_servo, Servo *s_servo
 }
 
 void car_set_velocity(float mps) {
+    //return;
     int speed = (int)mps;
     if (speed > 2000)
-        speed = 2000;
+        speed = 1900;
     if (speed < 1500)
         speed = 1500;
     car_motor_servo->writeMicroseconds(speed);
 } 
 
 void car_set_steering(float angle) {
-    if (angle > CAR_MAX_STEERING_ANGLE_LEFT) {
-        angle = (CAR_MAX_STEERING_ANGLE_LEFT / (M_PI/180));
+    if (angle < -CAR_MAX_STEERING_ANGLE_LEFT) {
+        angle = -CAR_MAX_STEERING_ANGLE_LEFT;
     }
-    else if (angle < -CAR_MAX_STEERING_ANGLE_RIGHT) {
-        angle = (-CAR_MAX_STEERING_ANGLE_RIGHT / (M_PI/180));
+    else if (angle > CAR_MAX_STEERING_ANGLE_RIGHT) {
+        angle = CAR_MAX_STEERING_ANGLE_RIGHT;
     }
-    else {
-        angle = (angle / (M_PI/180));
-    }
-    //DEBUG_LOGLN(angle);
-    //Erik made me do this!!!!
-    //this calculation is derived from an second order polynomial line adaptation from desired angle to servo angle
-    float servo_value = (angle * angle) * (CAR_STEERING_SERVO_MIDDLE / 8778.0) + angle * (8545.0/8778.0) + CAR_STEERING_SERVO_MIDDLE; 
-    
-    /* 
-    if (servo_value > CAR_STEERING_SERVO_MIDDLE)
-        car_steering_servo->write(servo_value * 1.15);
-    else if (servo_value < CAR_STEERING_SERVO_MIDDLE)
-        car_steering_servo->write(servo_value / 1.15);
-    else
-        car_steering_servo->write(servo_value);
-    */
 
-    car_steering_servo->write(servo_value);
-    /*
-    angle += CAR_MAX_STEERING_ANGLE;
-    int servo_diff = CAR_STEERING_SERVO_MAX - CAR_STEERING_SERVO_MIN;
-    int servo_value = servo_diff + (angle / (CAR_MAX_STEERING_ANGLE * 2)) * servo_diff;
+    int servo_value = 0;
+
+    //   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+
+    if (angle < 0) {
+        angle += CAR_MAX_STEERING_ANGLE_LEFT;
+        int servo_diff = abs(CAR_STEERING_SERVO_MIDDLE - CAR_STEERING_SERVO_LEFT);
+        servo_value = CAR_STEERING_SERVO_LEFT - angle * (servo_diff / CAR_MAX_STEERING_ANGLE_LEFT);
+    } else {
+        int servo_diff = abs(CAR_STEERING_SERVO_RIGHT - CAR_STEERING_SERVO_MIDDLE);
+        servo_value = CAR_STEERING_SERVO_MIDDLE - angle * (servo_diff / CAR_MAX_STEERING_ANGLE_RIGHT);
+    }
     
+    //DEBUG_LOGLN(servo_value);
     car_steering_servo->write(servo_value);
-    current_steering = angle - CAR_MAX_STEERING_ANGLE;
-    */
 }
 
 void car_update_velocity(){
@@ -131,6 +123,13 @@ float car_get_sensor_angle() {
 // distance from middle to line
 float car_get_sensor_distance() {
     static float previous_distance = 0;
+    static long since_previous = millis();
+
+    if (millis() - since_previous < 50) {
+        return previous_distance;
+    } else {
+        since_previous = millis(); 
+    }
     
     car_measurements car_vals = *(car_get_measurements());
 
@@ -146,6 +145,7 @@ float car_get_sensor_distance() {
 
     uint8_t sensor_state = car_get_sensor_state();
 
+    /*
     if (bitRead(sensor_state, mid) == 1) {
         found_sensors[found_index++] = car_vals.sensor_distances[mid];
         sensor_found_left = true;
@@ -196,21 +196,52 @@ float car_get_sensor_distance() {
 
     avg_distance /= SENSOR_ARRAY_PREVIOUS_MAX;
     previous_distance = avg_distance;
+    */
 
+    // sensor_state
+    previous_sensor_array_values[previous_sensor_array_count++] = sensor_state;
     if (previous_sensor_array_count == SENSOR_ARRAY_PREVIOUS_MAX)
         previous_sensor_array_count = 0;
 
-    return avg_distance;
+    int sensor_count[6] = {};
+    for (int i = 0; i<SENSOR_ARRAY_PREVIOUS_MAX; i++) {
+        for (int j = 0; j<=5; j++) {
+            sensor_count[j] += bitRead(previous_sensor_array_values[i], j);
+        }
+    }
+
+    int max_index = -1;
+    int current_max = 0;
+    for (int i = 0; i<6; i++) {
+        if (current_max < max(sensor_count[i], current_max)) {
+            current_max = max(sensor_count[i], current_max);
+            max_index = i;
+        }
+    }
+
+    if (max_index == -1) {
+        return previous_distance;
+    } else {
+        previous_distance = car_vals.sensor_distances[max_index] * 4;
+        return car_vals.sensor_distances[max_index] * 4;
+    }
+
+    /*
+    if (previous_sensor_array_count == SENSOR_ARRAY_PREVIOUS_MAX)
+        previous_sensor_array_count = 0;
+    */
+
+    //return avg_distance;
 }
 
 car_measurements* car_get_measurements() {
-    static car_measurements car_mes = { 0.263, 0.185, { -0.22, -0.14, -0.04, 0, 0.04, 0.14, 0.22 } };
+    static car_measurements car_mes = { 0.263, 0.185, { -0.075, -0.045, -0.015, 0.015, 0.045, 0.075 } };
     return &car_mes;
 }
 
 uint8_t car_get_sensor_state() {
         uint8_t sensor_state = 128;
-    for (int i = 0; i<7; ++i) {
+    for (int i = 0; i<6; ++i) {
         if (digitalRead(sensor_pins[i]) == HIGH) {
             bitSet(sensor_state, i);
         } else {

@@ -35,3 +35,4 @@ void bluetooth_send(const char *const data, int len);
 void ccpr_parse_packet(car_ctrl_packet_result& ccpr);
 void ccpr_reset(car_ctrl_packet_result& ccpr);
 #endif
+

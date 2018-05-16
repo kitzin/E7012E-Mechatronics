@@ -22,7 +22,7 @@ void bluetooth_init(HardwareSerial *s) {
     buffer_current_max_data_pos = buffer_start;
 }
 
-void bluetooth_thread_send(){
+void bluetooth_thread_send() {
     if(bytes_in_buffer > 0){
         bluetooth_serial->write(*buffer_current_read_pos);
         bytes_in_buffer--;
@@ -159,3 +159,4 @@ void ccpr_parse_packet(car_ctrl_packet_result &ccpr) {
             break;
     }
 }
+
