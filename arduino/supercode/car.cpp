@@ -50,7 +50,6 @@ void car_init(int speed_pins[], int sense_pins[], Servo *m_servo, Servo *s_servo
 }
 
 void car_set_velocity(float mps) {
-    //return;
     int speed = (int)mps;
     if (speed > 2000)
         speed = 1900;
@@ -71,6 +70,7 @@ void car_set_steering(float angle) {
 
     //   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 
+	
     if (angle < 0) {
         angle += CAR_MAX_STEERING_ANGLE_LEFT;
         int servo_diff = abs(CAR_STEERING_SERVO_MIDDLE - CAR_STEERING_SERVO_LEFT);
@@ -79,9 +79,14 @@ void car_set_steering(float angle) {
         int servo_diff = abs(CAR_STEERING_SERVO_RIGHT - CAR_STEERING_SERVO_MIDDLE);
         servo_value = CAR_STEERING_SERVO_MIDDLE - angle * (servo_diff / CAR_MAX_STEERING_ANGLE_RIGHT);
     }
-    
+
+    //DEBUG_LOGLN(angle);
     //DEBUG_LOGLN(servo_value);
     car_steering_servo->write(servo_value);
+}
+
+void car_set_simple_steering(float angle) {
+	car_steering_servo->write(angle);
 }
 
 void car_update_velocity(){
@@ -235,7 +240,8 @@ float car_get_sensor_distance() {
 }
 
 car_measurements* car_get_measurements() {
-    static car_measurements car_mes = { 0.263, 0.185, { -0.075, -0.045, -0.015, 0.015, 0.045, 0.075 } };
+    //static car_measurements car_mes = { 0.263, 0.185, { -0.075, -0.045, -0.015, 0.015, 0.045, 0.075 } };
+    static car_measurements car_mes = { 0.263, 0.185, { -0.075, -0.035, -0.015, 0.015, 0.035, 0.075 } };
     return &car_mes;
 }
 

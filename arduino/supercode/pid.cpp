@@ -25,7 +25,7 @@ void pid_init() {
     velocity_pid.SetSampleTime(100);
     
     angle_pid.SetMode(AUTOMATIC);
-    angle_pid.SetOutputLimits(-CAR_MAX_STEERING_ANGLE_RIGHT, CAR_MAX_STEERING_ANGLE_LEFT);
+    angle_pid.SetOutputLimits(-CAR_MAX_STEERING_ANGLE_RIGHT/3, CAR_MAX_STEERING_ANGLE_LEFT/3);
     velocity_pid.SetSampleTime(100);
     
     angle_velocity_pid.SetMode(AUTOMATIC);
@@ -43,8 +43,8 @@ void pid_update() {
     velocity_io.in = car_get_velocity(); 
     angle_io.in = -car_get_sensor_angle();
     angle_vel_io.in = -abs(car_get_sensor_angle());
-
-    if (abs(car_get_sensor_distance()) > abs(car.sensor_distances[2])) {
+	float sensor_distance = car_get_sensor_distance();
+    if (abs(sensor_distance) > abs(car.sensor_distances[2])) {
         velocity_io.set = 0.2;  
     }
     else {
@@ -61,11 +61,29 @@ void pid_update() {
     car_set_velocity(velocity_io.out + 1500);
     
     float steering_angle = 1.3 * atan2(
-            2 * car.length * car_get_sensor_distance(),
-            pow(car.length + car.distance_to_sensor, 2) + pow(car_get_sensor_distance(), 2));
-    
+            2 * car.length * sensor_distance,
+            pow(car.length + car.distance_to_sensor, 2) + pow(sensor_distance, 2));
+
     // set steering angle from controller
-    car_set_steering(angle_io.out + steering_angle);
+    //car_set_steering(angle_io.out + steering_angle);
+	DEBUG_LOGLNS(sensor_distance, 5);
+	if ( sensor_distance <= -0.25) {
+		steering_angle = 125; 
+	}
+	else if ( sensor_distance <= -0.13 && sensor_distance > -0.25 ) {
+		steering_angle = 110;
+	}
+	else if ( abs(sensor_distance) <= 0.09 ) {
+		steering_angle = 95;
+	}
+	else if ( sensor_distance >= 0.13 && sensor_distance < 0.25) {
+		steering_angle = 80;
+	}
+	else if ( sensor_distance >= 0.25 ) {
+		steering_angle = 70;
+	}
+	car_set_simple_steering(steering_angle);
+    //car_set_steering(steering_angle);
 
     //uint8_t state = car_get_sensor_state();
     /*

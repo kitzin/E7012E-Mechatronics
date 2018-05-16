@@ -14,7 +14,8 @@
 #define CAR_STEERING_SERVO_LEFT 125
 
 #define ANGLE_VELOCITY_PREVIOUS_MAX 5
-#define SENSOR_ARRAY_PREVIOUS_MAX 3
+//#define SENSOR_ARRAY_PREVIOUS_MAX 3
+#define SENSOR_ARRAY_PREVIOUS_MAX 1 
 
 typedef struct {
     float length;
