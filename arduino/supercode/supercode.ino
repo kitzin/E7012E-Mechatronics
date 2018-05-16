@@ -20,22 +20,22 @@ int speed_pins[] = {
     SPEED_PIN_LEFT, SPEED_PIN_RIGHT };
 
 void printing() {
-    //DEBUG_LOGLN(car_get_steering()); 
-    //DEBUG_LOGLNS(car_get_sensor_state(), BIN);
+    DEBUG_LOGLN(car_get_current_servo_value()); 
+    //DEBUG_LOGLNS(128 + car_get_sensor_state(), BIN);
     //DEBUG_LOGLN(car_get_velocity());
     //DEBUG_LOGLN(car_get_sensor_angle() * (180 / M_PI));
     //DEBUG_LOGLN(car_get_sensor_distance());
 }
 
-long time_last_pid = 0;
-long time_last_car_update_vel = 0;
-long time_last_car_update_angle = 0;
-long time_since_print = 0;
+unsigned long time_last_pid = 0;
+unsigned long time_last_car_update_vel = 0;
+unsigned long time_last_car_update_angle = 0;
+unsigned long time_since_print = 0;
 
-long timeout_pid = 50*1000;
-long timout_car_update_vel = 50*1000;
-long timout_car_update_angle = 50*1000;
-long timeout_print = 1000;
+unsigned long timeout_pid = 50;
+unsigned long timeout_car_update_vel = 50;
+unsigned long timeout_car_update_angle = 50;
+unsigned long timeout_print = 1000;
 
 void setup() {
     // setup serial port for usb
@@ -81,23 +81,26 @@ void setup() {
     DEBUG_LOGLN("finish...");
     digitalWrite(LED_BUILTIN, HIGH);
 
-    car_set_steering(0);
-    
+	car_set_simple_steering(95);
+	
     DEBUG_FLUSH();
 }
 
 void loop() {
 	if (millis() - time_last_pid >= timeout_pid){
+		DEBUG_LOGLN("lol1");
 		time_last_pid = millis();
 		pid_update();
 	}
 
 	if (millis() - time_last_car_update_angle >= timeout_car_update_angle){
+		DEBUG_LOGLN("lol2");
 		time_last_car_update_angle = millis();
 		car_update_servo_angle();
 	}
 
 	if (millis() - time_last_car_update_vel >= timeout_car_update_vel){
+		DEBUG_LOGLN("lol3");
 		time_last_car_update_vel = millis();
 		car_update_velocity();
 	}
