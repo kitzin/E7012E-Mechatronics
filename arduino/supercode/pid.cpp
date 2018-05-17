@@ -37,6 +37,5 @@ void pid_update() {
     velocity_pid.Compute();
 
     // set velocity from controller
-    //car_set_velocity(velocity_io.out - angle_vel_io.out + 1500);
     car_set_velocity(velocity_io.out + 1500);
 }
