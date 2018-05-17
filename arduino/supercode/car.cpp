@@ -33,11 +33,17 @@ void car_speedsensor_right_pulse() {
     ++pulse_right_count;
 }
 
+void 
+
 void car_init(int speed_pins[], int sense_pins[], Servo *m_servo, Servo *s_servo) {
     attachInterrupt(digitalPinToInterrupt(speed_pins[0]), car_speedsensor_left_pulse, FALLING);
     attachInterrupt(digitalPinToInterrupt(speed_pins[1]), car_speedsensor_right_pulse, FALLING);
 
     sensor_pins = sense_pins;
+
+    for (int i = 0; i<6; i++) {
+        attachInterrupt(digitalPinToInterrupt(sense_pins[i]), car_update_servo_angle, CHANGE);
+    }
 
     car_motor_servo = m_servo;
     car_steering_servo = s_servo;

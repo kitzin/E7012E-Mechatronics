@@ -30,13 +30,11 @@ void printing() {
 unsigned long time_last_pid = 0;
 unsigned long time_last_car_update_vel = 0;
 unsigned long time_last_car_update_angle = 0;
-unsigned long time_last_car_servo_write = 0;
 unsigned long time_since_print = 0;
 
 unsigned long timeout_pid = 50;
 unsigned long timeout_car_update_vel = 50;
 unsigned long timeout_car_update_angle = 10;
-unsigned long timeout_car_servo_write = 50;
 unsigned long timeout_print = 1000;
 
 void setup() {
@@ -107,10 +105,5 @@ void loop() {
 	if (millis() - time_since_print >= timeout_print){
 		time_since_print = millis();
 		printing();
-	}
-
-	if (millis() - time_last_car_servo_write  >= timeout_car_servo_write){
-		time_last_car_servo_write = millis();
-		car_write_steering_servo();
 	}
 }
