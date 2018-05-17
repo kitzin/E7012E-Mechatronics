@@ -32,6 +32,7 @@ car_measurements* car_get_measurements();
 uint8_t car_get_sensor_state();
 void car_update_servo_angle();
 int car_get_current_servo_value();
+void car_write_steering_servo()
 
 #endif
 

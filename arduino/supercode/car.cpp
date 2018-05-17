@@ -140,19 +140,22 @@ int get_servo_value_from_state(uint8_t state) {
 }
 
 int previous_servo_value = 0;
-int car_get_current_servo_value() {
-    return previous_servo_value;
-}
+uint8_t previous_state = 0;
 
 void car_update_servo_angle() {
-    static uint8_t previous_state = 0;
     uint8_t state = car_get_sensor_state();
 
     if(state != 0 && get_servo_value_from_state(state | previous_state) != -1) {
         previous_servo_value = get_servo_value_from_state(state);
         previous_state = state;
     }
+}
 
+int car_get_current_servo_value() {
+    return previous_servo_value;
+}
+
+void car_write_steering_servo() {
     car_set_simple_steering(previous_servo_value);
 }
 
