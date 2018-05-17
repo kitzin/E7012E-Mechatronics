@@ -85,57 +85,56 @@ float car_get_velocity() {
 int get_servo_value_from_state(uint8_t state) {
 
     int servo_value = -1;
-   switch(state) {
-       case 0b100000:
-           servo_value = 70;
-           break;
-       case 0b110000:
-           servo_value = 70;
-           break;
-       case 0b111000:
-           servo_value = 80;
-           break;
-       case 0b010000:
-           servo_value = 80;
-           break;
-       case 0b011000:
-           servo_value = 85;
-           break;
-       case 0b011100:
-           servo_value = 90;
-           break;
-       case 0b001000:
-           servo_value = 90;
-           break;
-       case 0b001100:
-           servo_value = 95;
-           break;
-       case 0b001110:
-           servo_value = 100;
-           break;
-       case 0b000100:
-           servo_value = 100;
-           break;
-       case 0b000110:
-           servo_value = 105; 
-           break;
-       case 0b000111:
-           servo_value = 110;
-           break;
-       case 0b000010:
+    switch(state) {
+        case 0b100000:
+            servo_value = 70;
+            break;
+        case 0b110000:
+            servo_value = 70;
+            break;
+        case 0b111000:
+            servo_value = 80;
+            break;
+        case 0b010000:
+            servo_value = 80;
+            break;
+        case 0b011000:
+            servo_value = 85;
+            break;
+        case 0b011100:
+            servo_value = 90;
+            break;
+        case 0b001000:
+            servo_value = 90;
+            break;
+        case 0b001100:
+            servo_value = 95;
+            break;
+        case 0b001110:
+            servo_value = 100;
+            break;
+        case 0b000100:
+            servo_value = 100;
+            break;
+        case 0b000110:
+            servo_value = 105; 
+            break;
+        case 0b000111:
             servo_value = 110;
-           break;
-       case 0b000011:
-           servo_value = 120;
-           break;
-       case 0b000001:
-           servo_value = 120;
-           break;
-
+            break;
+        case 0b000010:
+            servo_value = 110;
+            break;
+        case 0b000011:
+            servo_value = 120;
+            break;
+        case 0b000001:
+            servo_value = 120;
+            break;
         default:
-           servo_value = -1;
-           break;
-   }
+            servo_value = -1;
+            break;
+    }
 
    return servo_value;
 }
